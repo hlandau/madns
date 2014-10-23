@@ -1,0 +1,97 @@
+- responses:
+    bit.:
+      rrs:
+        - bit. IN SOA ns1.x--nmc.bit. . 0 0 0 0 0
+        - bit. IN NS ns1.x--nmc.bit.
+    ns1.x--nmc.bit.:
+      rrs:
+        - ns1.x--nmc.bit. IN A 127.127.127.127
+    example.bit.:
+      rrs:
+        - example.bit. IN NS ns1.example.bit.
+        - example.bit. IN NS ns2.example.bit.
+    ns1.example.bit.:
+      rrs:
+        - ns1.example.bit. IN A 127.0.0.41
+        - ns1.example.bit. IN AAAA ::41
+    ns2.example.bit.:
+      rrs:
+        - ns2.example.bit. IN A 127.0.0.42
+        - ns2.example.bit. IN AAAA ::42
+  queries:
+    - qname: bit.
+      qtype: SOA
+      dnssec: false
+      result: NOERROR
+      aa: true
+      an:
+        - bit. IN SOA ns1.x--nmc.bit. . 0 0 0 0 0
+      ns:
+      ad:
+    - qname: bit.
+      qtype: NS
+      dnssec: false
+      result: NOERROR
+      aa: true
+      an:
+        - bit. IN NS ns1.x--nmc.bit.
+    - qname: ns1.x--nmc.bit.
+      qtype: A
+      dnssec: false
+      result: NOERROR
+      aa: true
+      an:
+        - ns1.x--nmc.bit. IN A 127.127.127.127
+    - qname: example.bit.
+      qtype: A
+      dnssec: false
+      result: NOERROR
+      aa: false
+      ns:
+        - example.bit. IN NS ns1.example.bit.
+        - example.bit. IN NS ns2.example.bit.
+      ad:
+        - ns1.example.bit. IN AAAA ::41
+        - ns1.example.bit. IN A 127.0.0.41
+        - ns2.example.bit. IN AAAA ::42
+        - ns2.example.bit. IN A 127.0.0.42
+    - qname: example.bit.
+      qtype: NS
+      dnssec: false
+      result: NOERROR
+      aa: false
+      ns:
+        - example.bit. IN NS ns1.example.bit.
+        - example.bit. IN NS ns2.example.bit.
+      ad:
+        - ns1.example.bit. IN AAAA ::41
+        - ns1.example.bit. IN A 127.0.0.41
+        - ns2.example.bit. IN AAAA ::42
+        - ns2.example.bit. IN A 127.0.0.42
+    - qname: ns1.example.bit.
+      qtype: NS
+      dnssec: false
+      result: NOERROR
+      aa: false
+      ns:
+        - example.bit. IN NS ns1.example.bit.
+        - example.bit. IN NS ns2.example.bit.
+      ad:
+        - ns1.example.bit. IN AAAA ::41
+        - ns1.example.bit. IN A 127.0.0.41
+        - ns2.example.bit. IN AAAA ::42
+        - ns2.example.bit. IN A 127.0.0.42
+    - qname: example.bit.
+      qtype: ANY
+      dnssec: false
+      result: NOERROR
+      aa: false
+      ns:
+        - example.bit. IN NS ns1.example.bit.
+        - example.bit. IN NS ns2.example.bit.
+      ad:
+        - ns1.example.bit. IN AAAA ::41
+        - ns1.example.bit. IN A 127.0.0.41
+        - ns2.example.bit. IN AAAA ::42
+        - ns2.example.bit. IN A 127.0.0.42
+

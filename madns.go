@@ -2,8 +2,16 @@ package madns
 import "github.com/miekg/dns"
 import "github.com/hlandau/madns/merr"
 import "strings"
-import "github.com/hlandau/degoutils/log"
+//import "github.com/hlandau/degoutils/log"
 import "sort"
+import "runtime"
+import "expvar"
+
+const version string = "1.0"
+
+var cNumQueries = expvar.NewInt("madns.numQueries")
+var cNumQueriesNoEDNS = expvar.NewInt("madns.numQueriesNoEDNS")
+var cBackendLookups = expvar.NewInt("madns.numBackendLookups")
 
 type Backend interface {
   // Lookup all resource records having a given fully-qualified owner name,
@@ -44,6 +52,8 @@ type engine struct {
 }
 
 func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
+  cNumQueries.Add(1)
+
   tx := Tx{}
   tx.req = reqMsg
   tx.res = &dns.Msg{}
@@ -57,6 +67,8 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
   opt := tx.req.IsEdns0()
   if opt != nil {
     tx.res.Extra = append(tx.res.Extra, opt)
+  } else {
+    cNumQueriesNoEDNS.Add(1)
   }
 
   for _, q := range tx.req.Question {
@@ -64,17 +76,16 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
     tx.qtype  = q.Qtype
     tx.qclass = q.Qclass
 
-    if q.Qclass != dns.ClassINET && q.Qclass != dns.ClassANY {
-      continue
-    }
-
     err := tx.addAnswers()
     if err != nil {
       if err == merr.ErrNoResults {
         tx.rcode = 0
       } else if err == merr.ErrNoSuchDomain {
         tx.rcode = dns.RcodeNameError
+      } else if err == merr.ErrNotInZone {
+        tx.rcode = dns.RcodeRefused
       } else if tx.rcode == 0 {
+        //log.Info("Issuing SERVFAIL because of error: ", err)
         tx.rcode = dns.RcodeServerFailure
       }
     }
@@ -117,6 +128,8 @@ type Tx struct {
 }
 
 func (tx *Tx) blookup(qname string) (rrs []dns.RR, err error) {
+  cBackendLookups.Add(1)
+
   rrs, err = tx.e.cfg.Backend.Lookup(qname)
   if err == nil && len(rrs) == 0 {
     err = merr.ErrNoResults
@@ -125,8 +138,13 @@ func (tx *Tx) blookup(qname string) (rrs []dns.RR, err error) {
 }
 
 func (tx *Tx) addAnswers() error {
+  if tx.qclass != dns.ClassINET && tx.qclass != dns.ClassANY {
+    return tx.addAnswersStrange()
+  }
+
   err := tx.addAnswersMain()
   if err != nil {
+    //log.Info("Error response (addAnswersMain): ", err)
     return err
   }
 
@@ -165,6 +183,32 @@ func (tx *Tx) addAnswers() error {
   err = tx.signResponse()
   if err != nil {
     return err
+  }
+
+  return nil
+}
+
+func (tx *Tx) addAnswersStrange() error {
+  if tx.qclass != dns.ClassCHAOS {
+    return merr.ErrNotInZone // Hmm...
+  }
+
+  // CHAOS responses are not signed, NSEC'd or otherwise DNSSEC'd in any way.
+  switch tx.qname {
+    case "version.bind.", "version.server.":
+      tx.res.Answer = append(tx.res.Answer, &dns.TXT {
+        Hdr: dns.RR_Header {
+          Name: "version.bind.",
+          Rrtype: dns.TypeTXT,
+          Class: dns.ClassCHAOS,
+          Ttl: 0,
+        },
+        Txt: []string{"madns/"+version+" "+runtime.Version()+"/"+runtime.GOARCH+"/"+runtime.GOOS+"/"+runtime.Compiler},
+      })
+    // TODO: hostname.bind.
+    // TODO: id.server.
+    default:
+      return merr.ErrNoSuchDomain
   }
 
   return nil
@@ -218,7 +262,7 @@ A:
               firstNSAtLen = len(n)
 
               tx.delegationPoint = dns.Fqdn(n)
-              log.Info("DELEGATION POINT: ", tx.delegationPoint)
+              //log.Info("DELEGATION POINT: ", tx.delegationPoint)
 
               if n == norig {
                 tx.queryIsAtDelegationPoint = true
@@ -256,8 +300,6 @@ A:
 }
 
 func (tx *Tx) addAnswersAuthoritative(rrs []dns.RR, origerr error) error {
-  log.Info("AUTHORITATIVE")
-
   // A call to blookup either succeeds or fails.
   //
   // If it fails:
@@ -326,8 +368,6 @@ func (tx *Tx) addAnswersCNAME(cn *dns.CNAME) error {
 }
 
 func (tx *Tx) addAnswersDelegation(nss []dns.RR) error {
-  log.Info("DELEGATION")
-
   if tx.qtype == dns.TypeDS /* don't use istype, must not match ANY */ &&
      tx.queryIsAtDelegationPoint {
     // If type DS was requested specifically (not ANY), we have to act like
@@ -394,7 +434,6 @@ func (tx *Tx) addNSEC() error {
   //   - Direct NSEC request
 
   if len(tx.res.Answer) == 0 {
-    log.Info("adding NSEC3")
     err := tx.addNSEC3RR()
     if err != nil {
       return err
@@ -463,7 +502,6 @@ func (tx *Tx) addAdditional() error {
 }
 
 func (tx *Tx) addAdditionalItem(aname string) error {
-  log.Info("ADDITIONAL:  ", aname)
   rrs, err := tx.blookup(aname)
   if err != nil {
     return err
