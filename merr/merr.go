@@ -55,3 +55,5 @@ var ErrNotInZone = Rerrorf(dns.RcodeRefused, "domain not in zone")
 // response code, but no results were returned. (DNS also uses NOERROR when results
 // are returned, but we return nil in that case.)
 var ErrNoResults = Rerrorf(0, "no results")
+
+// © 2014 Hugo Landau <hlandau@devever.net>    GPLv3 or later

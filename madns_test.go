@@ -264,3 +264,5 @@ func (p *psuedorw) TsigTimersOnly(b bool) {
 
 func (p *psuedorw) Hijack() {
 }
+
+// © 2014 Hugo Landau <hlandau@devever.net>    GPLv3 or later
