@@ -15,6 +15,7 @@ var cNumQueries = expvar.NewInt("madns.numQueries")
 var cNumQueriesNoEDNS = expvar.NewInt("madns.numQueriesNoEDNS")
 var cBackendLookups = expvar.NewInt("madns.numBackendLookups")
 
+// Interface for querying an abstract zone file.
 type Backend interface {
 	// Lookup all resource records having a given fully-qualified owner name,
 	// regardless of type or class. Returns a slice of all those resource records
@@ -29,10 +30,13 @@ type Backend interface {
 	Lookup(qname string) (rrs []dns.RR, err error)
 }
 
+// DNS query engine implementing dns.Handler. Suitable for exposure directly to
+// the network via ServeMux.
 type Engine interface {
 	dns.Handler
 }
 
+// Engine Configuration.
 type EngineConfig struct {
 	Backend    Backend
 	KSK        *dns.DNSKEY
@@ -41,6 +45,7 @@ type EngineConfig struct {
 	ZSKPrivate dns.PrivateKey
 }
 
+// Creates a new query engine.
 func NewEngine(cfg *EngineConfig) (e Engine, err error) {
 	ee := &engine{}
 	ee.cfg = *cfg
@@ -56,7 +61,7 @@ type engine struct {
 func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 	cNumQueries.Add(1)
 
-	tx := Tx{}
+	tx := stx{}
 	tx.req = reqMsg
 	tx.res = &dns.Msg{}
 	tx.res.SetReply(tx.req)
@@ -98,7 +103,7 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 	rw.WriteMsg(tx.res) /* ignore err */
 }
 
-type Tx struct {
+type stx struct {
 	req    *dns.Msg
 	res    *dns.Msg
 	qname  string
@@ -129,7 +134,7 @@ type Tx struct {
 	suppressNSEC bool
 }
 
-func (tx *Tx) blookup(qname string) (rrs []dns.RR, err error) {
+func (tx *stx) blookup(qname string) (rrs []dns.RR, err error) {
 	cBackendLookups.Add(1)
 
 	rrs, err = tx.e.cfg.Backend.Lookup(qname)
@@ -139,7 +144,7 @@ func (tx *Tx) blookup(qname string) (rrs []dns.RR, err error) {
 	return
 }
 
-func (tx *Tx) addAnswers() error {
+func (tx *stx) addAnswers() error {
 	if tx.qclass != dns.ClassINET && tx.qclass != dns.ClassANY {
 		return tx.addAnswersStrange()
 	}
@@ -190,7 +195,7 @@ func (tx *Tx) addAnswers() error {
 	return nil
 }
 
-func (tx *Tx) addAnswersStrange() error {
+func (tx *stx) addAnswersStrange() error {
 	if tx.qclass != dns.ClassCHAOS {
 		return merr.ErrNotInZone // Hmm...
 	}
@@ -216,7 +221,7 @@ func (tx *Tx) addAnswersStrange() error {
 	return nil
 }
 
-func (tx *Tx) addAnswersMain() error {
+func (tx *stx) addAnswersMain() error {
 	var soa *dns.SOA
 	var origq []dns.RR
 	var origerr error
@@ -295,13 +300,13 @@ A:
 	if firstSOAAtLen >= firstNSAtLen {
 		// We got a SOA and zero or more NSes at the same level; we're not a delegation.
 		return tx.addAnswersAuthoritative(origq, origerr)
-	} else {
-		// We have a delegation.
-		return tx.addAnswersDelegation(nss)
 	}
+	
+	// We have a delegation.
+	return tx.addAnswersDelegation(nss)
 }
 
-func (tx *Tx) addAnswersAuthoritative(rrs []dns.RR, origerr error) error {
+func (tx *stx) addAnswersAuthoritative(rrs []dns.RR, origerr error) error {
 	// A call to blookup either succeeds or fails.
 	//
 	// If it fails:
@@ -364,12 +369,12 @@ func rrsetHasType(rrs []dns.RR, t uint16) dns.RR {
 	return nil
 }
 
-func (tx *Tx) addAnswersCNAME(cn *dns.CNAME) error {
+func (tx *stx) addAnswersCNAME(cn *dns.CNAME) error {
 	tx.res.Answer = append(tx.res.Answer, cn)
 	return nil
 }
 
-func (tx *Tx) addAnswersDelegation(nss []dns.RR) error {
+func (tx *stx) addAnswersDelegation(nss []dns.RR) error {
 	if tx.qtype == dns.TypeDS /* don't use istype, must not match ANY */ &&
 		tx.queryIsAtDelegationPoint {
 		// If type DS was requested specifically (not ANY), we have to act like
@@ -417,11 +422,11 @@ func (tx *Tx) addAnswersDelegation(nss []dns.RR) error {
 	return nil
 }
 
-func (tx *Tx) queueAdditional(name string) {
+func (tx *stx) queueAdditional(name string) {
 	tx.additionalQueue[name] = struct{}{}
 }
 
-func (tx *Tx) addNSEC() error {
+func (tx *stx) addNSEC() error {
 	if !tx.useDNSSEC() || tx.suppressNSEC {
 		return nil
 	}
@@ -445,7 +450,7 @@ func (tx *Tx) addNSEC() error {
 	return nil
 }
 
-func (tx *Tx) addNSEC3RR() error {
+func (tx *stx) addNSEC3RR() error {
 	// deny the name
 	err := tx.addNSEC3RRActual(tx.qname, tx.typesAtQname)
 	if err != nil {
@@ -461,9 +466,9 @@ func (tx *Tx) addNSEC3RR() error {
 	return nil
 }
 
-func (tx *Tx) addNSEC3RRActual(name string, tset map[uint16]struct{}) error {
+func (tx *stx) addNSEC3RRActual(name string, tset map[uint16]struct{}) error {
 	tbm := []uint16{}
-	for t, _ := range tset {
+	for t := range tset {
 		tbm = append(tbm, t)
 	}
 
@@ -492,7 +497,7 @@ func (tx *Tx) addNSEC3RRActual(name string, tset map[uint16]struct{}) error {
 	return nil
 }
 
-func (tx *Tx) addAdditional() error {
+func (tx *stx) addAdditional() error {
 	for aname := range tx.additionalQueue {
 		err := tx.addAdditionalItem(aname)
 		if err != nil {
@@ -503,7 +508,7 @@ func (tx *Tx) addAdditional() error {
 	return nil
 }
 
-func (tx *Tx) addAdditionalItem(aname string) error {
+func (tx *stx) addAdditionalItem(aname string) error {
 	rrs, err := tx.blookup(aname)
 	if err != nil {
 		return err

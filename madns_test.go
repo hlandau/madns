@@ -197,8 +197,8 @@ var testKSKPrivate dns.PrivateKey
 var testZSK *dns.DNSKEY
 var testZSKPrivate dns.PrivateKey
 
-var testKSKs string = `test. IN DNSKEY 257 3 8 AwEAAbl6k1vj0oJ8fvRW0ouMxGfUVz0/HGnaRj7oSolrxO+wvpZf+jX8 WKdE7TfKiVTipXfHhMe655Ltb5IKcrygyDCgLDyBOv8HygnZNznh8GCN KVHNp14lOLlQWzW3WYTrvwG5iswQuJq/f0WKrWNe9glIP/nL4l0CNEZs 6qgc2x47+07wogpTip0BLdjGP59+tXZTRlmw4z7ELE1chZxOtVjbMfIC ANjET59SYuN8nxZPy6mPqpjV65OvRpw+IYPnWLrIm0laPnOFePfiUF1v eag/NDhgE5kGFDMqsdNkDv8QX5tAICrnduillqNtm+AzUM9pERFaJeMn 3RpDLR4nzdc=`
-var testKSKPrivates string = `Private-key-format: v1.3
+var testKSKs = `test. IN DNSKEY 257 3 8 AwEAAbl6k1vj0oJ8fvRW0ouMxGfUVz0/HGnaRj7oSolrxO+wvpZf+jX8 WKdE7TfKiVTipXfHhMe655Ltb5IKcrygyDCgLDyBOv8HygnZNznh8GCN KVHNp14lOLlQWzW3WYTrvwG5iswQuJq/f0WKrWNe9glIP/nL4l0CNEZs 6qgc2x47+07wogpTip0BLdjGP59+tXZTRlmw4z7ELE1chZxOtVjbMfIC ANjET59SYuN8nxZPy6mPqpjV65OvRpw+IYPnWLrIm0laPnOFePfiUF1v eag/NDhgE5kGFDMqsdNkDv8QX5tAICrnduillqNtm+AzUM9pERFaJeMn 3RpDLR4nzdc=`
+var testKSKPrivates = `Private-key-format: v1.3
 Algorithm: 8 (RSASHA256)
 Modulus: uXqTW+PSgnx+9FbSi4zEZ9RXPT8cadpGPuhKiWvE77C+ll/6NfxYp0TtN8qJVOKld8eEx7rnku1vkgpyvKDIMKAsPIE6/wfKCdk3OeHwYI0pUc2nXiU4uVBbNbdZhOu/AbmKzBC4mr9/RYqtY172CUg/+cviXQI0RmzqqBzbHjv7TvCiClOKnQEt2MY/n361dlNGWbDjPsQsTVyFnE61WNsx8gIA2MRPn1Ji43yfFk/LqY+qmNXrk69GnD4hg+dYusibSVo+c4V49+JQXW95qD80OGATmQYUMyqx02QO/xBfm0AgKud26KWWo22b4DNQz2kREVol4yfdGkMtHifN1w==
 PublicExponent: AQAB
@@ -211,8 +211,8 @@ Coefficient: vM/4XLV1OFjOu4k56vfms740bBbtx4EKSxCwX/5G9Kv/5l16TLDDHptprsCMXkeiVPt
 Created: 20141023114435
 Publish: 20141023114435
 Activate: 20141023114435`
-var testZSKs string = `test. IN DNSKEY 256 3 8 AwEAAcvVQXYfm05Le/TE14OT5xy+CixHxVQcKW7B3blAXVnEPgJ3bO8o hReix0q3ep7e6epc687FeE1YErjJsawxSsX3ZfwrBWECKKkUsxBs3XHQ wPYbNsUnTiWmOPsonc1ANfM8IM5eAkG+zXtIOB/5NiQaieZimd5770Z4 eXNhVWqla4EGgVGZ4xp32Xfz+gkYbGy8FX56X1MMFNuaE4R0TrK48rki 9M44WDyhEHOTqPiSB3mTD6oDoKzitenIPS39SMPD/jrsB+z51ksDE9Ci oMUNUvqhq7nYiz6icYDE+/f1qveWBn7okd23RcjCap46a6i6zOpDLsTe dt8eptLcYnk=`
-var testZSKPrivates string = `Private-key-format: v1.3
+var testZSKs = `test. IN DNSKEY 256 3 8 AwEAAcvVQXYfm05Le/TE14OT5xy+CixHxVQcKW7B3blAXVnEPgJ3bO8o hReix0q3ep7e6epc687FeE1YErjJsawxSsX3ZfwrBWECKKkUsxBs3XHQ wPYbNsUnTiWmOPsonc1ANfM8IM5eAkG+zXtIOB/5NiQaieZimd5770Z4 eXNhVWqla4EGgVGZ4xp32Xfz+gkYbGy8FX56X1MMFNuaE4R0TrK48rki 9M44WDyhEHOTqPiSB3mTD6oDoKzitenIPS39SMPD/jrsB+z51ksDE9Ci oMUNUvqhq7nYiz6icYDE+/f1qveWBn7okd23RcjCap46a6i6zOpDLsTe dt8eptLcYnk=`
+var testZSKPrivates = `Private-key-format: v1.3
 Algorithm: 8 (RSASHA256)
 Modulus: y9VBdh+bTkt79MTXg5PnHL4KLEfFVBwpbsHduUBdWcQ+Ands7yiFF6LHSrd6nt7p6lzrzsV4TVgSuMmxrDFKxfdl/CsFYQIoqRSzEGzdcdDA9hs2xSdOJaY4+yidzUA18zwgzl4CQb7Ne0g4H/k2JBqJ5mKZ3nvvRnh5c2FVaqVrgQaBUZnjGnfZd/P6CRhsbLwVfnpfUwwU25oThHROsrjyuSL0zjhYPKEQc5Oo+JIHeZMPqgOgrOK16cg9Lf1Iw8P+OuwH7PnWSwMT0KKgxQ1S+qGrudiLPqJxgMT79/Wq95YGfuiR3bdFyMJqnjprqLrM6kMuxN523x6m0txieQ==
 PublicExponent: AQAB

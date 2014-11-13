@@ -8,7 +8,7 @@ import "fmt"
 
 // Determines if a transaction should be considered to have the given query type.
 // Returns true iff the query type was qtype or ANY.
-func (tx *Tx) istype(qtype uint16) bool {
+func (tx *stx) istype(qtype uint16) bool {
 	return tx.qtype == qtype || tx.qtype == dns.TypeANY
 }
 
@@ -27,7 +27,7 @@ func stepName(hashB32Hex string) string {
 	log.Panice(err, hashB32Hex)
 
 	for i := len(b) - 1; i >= 0; i-- {
-		b[i] += 1
+		b[i]++
 		if b[i] != 0 { // didn't rollover, don't need to continue
 			break
 		}
@@ -49,7 +49,7 @@ func shouldSignType(t uint16, isAuthoritySection bool) bool {
 }
 
 // Returns true iff a client requested DNSSEC.
-func (tx *Tx) useDNSSEC() bool {
+func (tx *stx) useDNSSEC() bool {
 	if tx.e.cfg.KSK == nil {
 		return false
 	}
@@ -64,7 +64,7 @@ func (tx *Tx) useDNSSEC() bool {
 // Sets an rcode for the response if there is no error rcode currently set for
 // the response. The idea is to return the rcode corresponding to the first
 // error which occurs.
-func (tx *Tx) setRcode(x int) {
+func (tx *stx) setRcode(x int) {
 	if tx.rcode == 0 {
 		tx.rcode = x
 	}
@@ -84,7 +84,7 @@ func rraMaxTTL(rra []dns.RR) uint32 {
 }
 
 // Used by signResponseSection.
-func (tx *Tx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
+func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 	if len(rra) == 0 {
 		return nil, fmt.Errorf("no RRs to such")
 	}
@@ -119,7 +119,7 @@ func (tx *Tx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 }
 
 // Used by signResponse.
-func (tx *Tx) signResponseSection(rra *[]dns.RR) error {
+func (tx *stx) signResponseSection(rra *[]dns.RR) error {
 	if len(*rra) == 0 {
 		return nil
 	}
@@ -171,7 +171,7 @@ func (tx *Tx) signResponseSection(rra *[]dns.RR) error {
 
 // This is called to append RRSIGs to the response based on the current records in the Answer and
 // Authority sections of the response. Records in the Additional section are not signed.
-func (tx *Tx) signResponse() error {
+func (tx *stx) signResponse() error {
 	if !tx.useDNSSEC() {
 		return nil
 	}
