@@ -1,4 +1,5 @@
 package madns
+
 import "testing"
 import "github.com/miekg/dns"
 import "github.com/hlandau/madns/merr"
@@ -10,185 +11,185 @@ import "io/ioutil"
 import "sort"
 
 type test struct {
-  Queries []*query
-  Responses map[string]*response
+	Queries   []*query
+	Responses map[string]*response
 }
 
 type query struct {
-  QName string
-  QType string
-  DNSSEC bool // Query: DNSSEC OK?
-  Result string
-  AA bool
-  AN []string
-  NS []string
-  AD []string
+	QName  string
+	QType  string
+	DNSSEC bool // Query: DNSSEC OK?
+	Result string
+	AA     bool
+	AN     []string
+	NS     []string
+	AD     []string
 }
 
 func (q *query) checkResponsesMatch(t *testing.T, msg *dns.Msg) {
-  if q.AA != msg.Authoritative {
-    t.Errorf("Authoritative flag did not match expectations")
-  }
-  if dns.RcodeToString[msg.Rcode] != q.Result {
-    t.Errorf("Result rcode (%s) did not match expectation (%s)", dns.RcodeToString[msg.Rcode], q.Result)
-    t.Errorf("Message: " + msg.String())
-  }
-  q.checkSectionMatches(t, msg.Answer, q.AN, "answer")
-  q.checkSectionMatches(t, msg.Ns, q.NS, "authority")
-  q.checkSectionMatches(t, msg.Extra, q.AD, "additional")
+	if q.AA != msg.Authoritative {
+		t.Errorf("Authoritative flag did not match expectations")
+	}
+	if dns.RcodeToString[msg.Rcode] != q.Result {
+		t.Errorf("Result rcode (%s) did not match expectation (%s)", dns.RcodeToString[msg.Rcode], q.Result)
+		t.Errorf("Message: " + msg.String())
+	}
+	q.checkSectionMatches(t, msg.Answer, q.AN, "answer")
+	q.checkSectionMatches(t, msg.Ns, q.NS, "authority")
+	q.checkSectionMatches(t, msg.Extra, q.AD, "additional")
 }
 
 func (q *query) checkSectionMatches(t *testing.T, rrs []dns.RR, ref []string, secname string) {
-  if secname == "additional" && len(rrs) > 0 {
-    if rrs[0].Header().Rrtype == dns.TypeOPT {
-      rrs = rrs[1:]
-    }
-  }
+	if secname == "additional" && len(rrs) > 0 {
+		if rrs[0].Header().Rrtype == dns.TypeOPT {
+			rrs = rrs[1:]
+		}
+	}
 
-  // Additional records are returned in random order due to madns internal architecture
-  // and go's map randomization which is fine, but we need to sort them here to get them
-  // to match up.
-  rrss := []string{}
-  for _, rr := range rrs {
-    rrss = append(rrss, rr.String())
-  }
-  sort.Strings(rrss)
+	// Additional records are returned in random order due to madns internal architecture
+	// and go's map randomization which is fine, but we need to sort them here to get them
+	// to match up.
+	rrss := []string{}
+	for _, rr := range rrs {
+		rrss = append(rrss, rr.String())
+	}
+	sort.Strings(rrss)
 
-  refss := []string{}
-  for _, s := range ref {
-    rsr, err := dns.NewRR(s)
-    log.Panice(err)
-    refss = append(refss, rsr.String())
-  }
-  sort.Strings(refss)
+	refss := []string{}
+	for _, s := range ref {
+		rsr, err := dns.NewRR(s)
+		log.Panice(err)
+		refss = append(refss, rsr.String())
+	}
+	sort.Strings(refss)
 
-  if len(rrs) != len(ref) {
-    s := ""
-    for _, r := range rrs {
-      s += r.String()
-      s += "\n"
-    }
-    t.Errorf("Expected %d RRs in %s section but got %d:\n%s", len(ref), secname, len(rrs), s)
-    return
-  }
-  for i  := range refss {
-    if refss[i] != rrss[i] {
-      log.Info("MISMATCH:")
-      log.Info("  ", refss[i])
-      log.Info("  ", rrss[i])
-      t.Errorf("Response RR mismatch")
-    }
-  }
+	if len(rrs) != len(ref) {
+		s := ""
+		for _, r := range rrs {
+			s += r.String()
+			s += "\n"
+		}
+		t.Errorf("Expected %d RRs in %s section but got %d:\n%s", len(ref), secname, len(rrs), s)
+		return
+	}
+	for i := range refss {
+		if refss[i] != rrss[i] {
+			log.Info("MISMATCH:")
+			log.Info("  ", refss[i])
+			log.Info("  ", rrss[i])
+			t.Errorf("Response RR mismatch")
+		}
+	}
 }
 
 type response struct {
-  RRs []string
-  Err string
+	RRs []string
+	Err string
 }
 
 func (b *test) Lookup(qname string) (rrs []dns.RR, err error) {
-  qname = dns.Fqdn(qname)
-  if r, ok := b.Responses[qname]; ok {
-    for _, rrstr := range r.RRs {
-      rr, err := dns.NewRR(rrstr)
-      log.Panice(err)
+	qname = dns.Fqdn(qname)
+	if r, ok := b.Responses[qname]; ok {
+		for _, rrstr := range r.RRs {
+			rr, err := dns.NewRR(rrstr)
+			log.Panice(err)
 
-      rrs = append(rrs, rr)
-    }
-    err = parseErr(r.Err)
-    if len(rrs) == 0 && err == nil {
-      err = merr.ErrNoResults
-    }
-  } else {
-    err = merr.ErrNoSuchDomain
-  }
-  return
+			rrs = append(rrs, rr)
+		}
+		err = parseErr(r.Err)
+		if len(rrs) == 0 && err == nil {
+			err = merr.ErrNoResults
+		}
+	} else {
+		err = merr.ErrNoSuchDomain
+	}
+	return
 }
 
 func parseErr(e string) error {
-  switch e {
-    case "":
-      return nil
-    case "REFUSED":
-      return merr.ErrNotInZone
-    case "NXDOMAIN":
-      return merr.ErrNoSuchDomain
-    default:
-      panic("unknown error: " + e)
-  }
+	switch e {
+	case "":
+		return nil
+	case "REFUSED":
+		return merr.ErrNotInZone
+	case "NXDOMAIN":
+		return merr.ErrNoSuchDomain
+	default:
+		panic("unknown error: " + e)
+	}
 }
 
 func testWith(t *testing.T, tst *test) {
-  cfg := &EngineConfig {
-    Backend: tst,
-    KSK: testKSK,
-    KSKPrivate: testKSKPrivate,
-    ZSK: testZSK,
-    ZSKPrivate: testZSKPrivate,
-  }
+	cfg := &EngineConfig{
+		Backend:    tst,
+		KSK:        testKSK,
+		KSKPrivate: testKSKPrivate,
+		ZSK:        testZSK,
+		ZSKPrivate: testZSKPrivate,
+	}
 
-  e, err := NewEngine(cfg)
-  if err != nil {
-    t.Errorf("Cannot create engine")
-    return
-  }
+	e, err := NewEngine(cfg)
+	if err != nil {
+		t.Errorf("Cannot create engine")
+		return
+	}
 
-  for _, q := range tst.Queries {
-    var res *dns.Msg
-    prw := &psuedorw{
-      writeMsg: func(m *dns.Msg) error {
-        res = m
-        return nil
-      },
-    }
-    req := &dns.Msg{}
-    req.SetQuestion(q.QName, parseType(q.QType))
-    req.SetEdns0(4096, q.DNSSEC)
+	for _, q := range tst.Queries {
+		var res *dns.Msg
+		prw := &psuedorw{
+			writeMsg: func(m *dns.Msg) error {
+				res = m
+				return nil
+			},
+		}
+		req := &dns.Msg{}
+		req.SetQuestion(q.QName, parseType(q.QType))
+		req.SetEdns0(4096, q.DNSSEC)
 
-    e.ServeDNS(prw, req)
-    if res == nil {
-      t.Errorf("Got nil response from ServeDNS")
-    } else {
-      q.checkResponsesMatch(t, res)
-    }
-  }
+		e.ServeDNS(prw, req)
+		if res == nil {
+			t.Errorf("Got nil response from ServeDNS")
+		} else {
+			q.checkResponsesMatch(t, res)
+		}
+	}
 }
 
 func parseType(s string) uint16 {
-  return dns.StringToType[s]
+	return dns.StringToType[s]
 }
 
 func TestResponses(t *testing.T) {
-  f, err := os.Open("test.yaml")
-  log.Panice(err)
+	f, err := os.Open("test.yaml")
+	log.Panice(err)
 
-  b, err := ioutil.ReadAll(f)
-  log.Panice(err)
+	b, err := ioutil.ReadAll(f)
+	log.Panice(err)
 
-  var tests []*test
-  err = yaml.Unmarshal(b, &tests)
-  log.Fatale(err)
+	var tests []*test
+	err = yaml.Unmarshal(b, &tests)
+	log.Fatale(err)
 
-  for _, tt := range tests {
-    testWith(t, tt)
-  }
+	for _, tt := range tests {
+		testWith(t, tt)
+	}
 }
 
 // DNSSEC keys used for testing purposes only
 func init() {
-  testKSKa, err := dns.NewRR(testKSKs)
-  log.Panice(err)
+	testKSKa, err := dns.NewRR(testKSKs)
+	log.Panice(err)
 
-  testZSKa, err := dns.NewRR(testZSKs)
-  log.Panice(err)
+	testZSKa, err := dns.NewRR(testZSKs)
+	log.Panice(err)
 
-  testKSK = testKSKa.(*dns.DNSKEY)
-  testZSK = testZSKa.(*dns.DNSKEY)
+	testKSK = testKSKa.(*dns.DNSKEY)
+	testZSK = testZSKa.(*dns.DNSKEY)
 
-  testKSKPrivate, err = testKSK.NewPrivateKey(testKSKPrivates)
-  log.Panice(err)
-  testZSKPrivate, err = testZSK.NewPrivateKey(testZSKPrivates)
-  log.Panice(err)
+	testKSKPrivate, err = testKSK.NewPrivateKey(testKSKPrivates)
+	log.Panice(err)
+	testZSKPrivate, err = testZSK.NewPrivateKey(testZSKPrivates)
+	log.Panice(err)
 }
 
 var testKSK *dns.DNSKEY
@@ -227,39 +228,39 @@ Activate: 20141023114438`
 
 // Psuedo dns.ResponseWriter for getting the response message.
 type psuedorw struct {
-  writeMsg func(m *dns.Msg) error
+	writeMsg func(m *dns.Msg) error
 }
 
 func (p *psuedorw) LocalAddr() net.Addr {
-  n, err := net.ResolveIPAddr("ip", "127.0.0.1")
-  log.Panice(err)
-  return n
+	n, err := net.ResolveIPAddr("ip", "127.0.0.1")
+	log.Panice(err)
+	return n
 }
 
 func (p *psuedorw) RemoteAddr() net.Addr {
-  n, err := net.ResolveIPAddr("ip", "127.0.0.1")
-  log.Panice(err)
-  return n
+	n, err := net.ResolveIPAddr("ip", "127.0.0.1")
+	log.Panice(err)
+	return n
 }
 
 func (p *psuedorw) WriteMsg(m *dns.Msg) error {
-  return p.writeMsg(m)
+	return p.writeMsg(m)
 }
 
 func (p *psuedorw) Write(b []byte) (int, error) {
-  panic("not supported")
+	panic("not supported")
 }
 
 func (p *psuedorw) Close() error {
-  panic("not supported")
+	panic("not supported")
 }
 
 func (p *psuedorw) TsigStatus() error {
-  panic("not supported")
+	panic("not supported")
 }
 
 func (p *psuedorw) TsigTimersOnly(b bool) {
-  panic("not supported")
+	panic("not supported")
 }
 
 func (p *psuedorw) Hijack() {

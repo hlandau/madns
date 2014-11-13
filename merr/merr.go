@@ -6,32 +6,32 @@ import "fmt"
 
 // An Error interface which allows an associated rcode to be queried.
 type Error interface {
-  error
+	error
 
-  // Returns the rcode which this error should be represented as in the DNS protocol.
-  Rcode() int
+	// Returns the rcode which this error should be represented as in the DNS protocol.
+	Rcode() int
 }
 
 type rerr struct {
-  error
-  e error
-  rcode int
+	error
+	e     error
+	rcode int
 }
 
 func (re *rerr) Error() string {
-  return re.e.Error()
+	return re.e.Error()
 }
 
 func (re *rerr) Rcode() int {
-  return re.rcode
+	return re.rcode
 }
 
 // Used to generate an Error which has a particular rcode. Otherwise like fmt.Errorf.
 func Rerrorf(rcode int, fmts string, args ...interface{}) Error {
-  re := &rerr{}
-  re.e = fmt.Errorf(fmts, args...)
-  re.rcode = rcode
-  return re
+	re := &rerr{}
+	re.e = fmt.Errorf(fmts, args...)
+	re.rcode = rcode
+	return re
 }
 
 // Standard errors.
