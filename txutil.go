@@ -49,6 +49,10 @@ func shouldSignType(t uint16, isAuthoritySection bool) bool {
 
 // Returns true iff a client requested DNSSEC.
 func (tx *Tx) useDNSSEC() bool {
+  if tx.e.cfg.KSK == nil {
+    return false
+  }
+
   opt := tx.req.IsEdns0()
   if opt == nil {
     return false
@@ -140,7 +144,7 @@ func (tx *Tx) signResponseSection(rra *[]dns.RR) error {
     }
 
     if shouldSignType(pt, (rra == &tx.res.Ns) ) {
-      useKSK := (pt == dns.TypeDNSKEY)
+      useKSK := (pt == dns.TypeDNSKEY && tx.e.cfg.KSK != nil)
       if useKSK {
         srr, err := tx.signRRs(a, true)
         if err != nil {
