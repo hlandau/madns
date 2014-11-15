@@ -39,10 +39,17 @@ type Engine interface {
 // Engine Configuration.
 type EngineConfig struct {
 	Backend    Backend
+
+	// Key signing key. If not set, ZSK is used for everything.
 	KSK        *dns.DNSKEY
 	KSKPrivate dns.PrivateKey
+
+	// Zone signing key. DNSSEC is disabled if this isn't set.
 	ZSK        *dns.DNSKEY
 	ZSKPrivate dns.PrivateKey
+
+	// Version string to report in 'version.bind.'
+	VersionString string
 }
 
 // Creates a new query engine.
@@ -203,6 +210,10 @@ func (tx *stx) addAnswersStrange() error {
 	// CHAOS responses are not signed, NSEC'd or otherwise DNSSEC'd in any way.
 	switch tx.qname {
 	case "version.bind.", "version.server.":
+		vs := tx.e.cfg.VersionString
+		if len(vs) > 0 {
+			vs += " "
+		}
 		tx.res.Answer = append(tx.res.Answer, &dns.TXT{
 			Hdr: dns.RR_Header{
 				Name:   "version.bind.",
@@ -210,7 +221,7 @@ func (tx *stx) addAnswersStrange() error {
 				Class:  dns.ClassCHAOS,
 				Ttl:    0,
 			},
-			Txt: []string{"madns/" + version + " " + runtime.Version() + "/" + runtime.GOARCH + "/" + runtime.GOOS + "/" + runtime.Compiler},
+			Txt: []string{vs + "madns/" + version + " " + runtime.Version() + "/" + runtime.GOARCH + "/" + runtime.GOOS + "/" + runtime.Compiler},
 		})
 	// TODO: hostname.bind.
 	// TODO: id.server.
