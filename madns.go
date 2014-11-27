@@ -5,6 +5,8 @@ import "github.com/hlandau/madns/merr"
 import "strings"
 
 //import "github.com/hlandau/degoutils/log"
+//import "fmt"
+
 import "sort"
 import "runtime"
 import "expvar"
@@ -38,7 +40,7 @@ type Engine interface {
 
 // Engine Configuration.
 type EngineConfig struct {
-	Backend    Backend
+	Backend Backend
 
 	// Key signing key. If not set, ZSK is used for everything.
 	KSK        *dns.DNSKEY
@@ -107,7 +109,11 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 
 	tx.res.SetRcode(tx.req, tx.rcode)
 
-	rw.WriteMsg(tx.res) /* ignore err */
+	err := rw.WriteMsg(tx.res)
+	if err != nil {
+		//log.Infoe(err)
+		//log.Info(fmt.Sprintf("%+v", tx.res))
+	}
 }
 
 type stx struct {
@@ -312,7 +318,7 @@ A:
 		// We got a SOA and zero or more NSes at the same level; we're not a delegation.
 		return tx.addAnswersAuthoritative(origq, origerr)
 	}
-	
+
 	// We have a delegation.
 	return tx.addAnswersDelegation(nss)
 }
