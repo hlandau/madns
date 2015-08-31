@@ -5,6 +5,7 @@ import "github.com/miekg/dns"
 import "encoding/base32"
 import "github.com/hlandau/degoutils/log"
 import "fmt"
+import "crypto"
 
 // Determines if a transaction should be considered to have the given query type.
 // Returns true iff the query type was qtype or ANY.
@@ -110,7 +111,7 @@ func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 		rrsig.KeyTag = tx.e.cfg.ZSK.KeyTag()
 	}
 
-	err := rrsig.Sign(pk, rra)
+	err := rrsig.Sign(pk.(crypto.Signer), rra)
 	if err != nil {
 		return nil, err
 	}
