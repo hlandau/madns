@@ -10,6 +10,7 @@ import "strings"
 import "sort"
 import "runtime"
 import "expvar"
+import "crypto"
 
 const version string = "1.0"
 
@@ -44,11 +45,11 @@ type EngineConfig struct {
 
 	// Key signing key. If not set, ZSK is used for everything.
 	KSK        *dns.DNSKEY
-	KSKPrivate dns.PrivateKey
+	KSKPrivate crypto.PrivateKey
 
 	// Zone signing key. DNSSEC is disabled if this isn't set.
 	ZSK        *dns.DNSKEY
-	ZSKPrivate dns.PrivateKey
+	ZSKPrivate crypto.PrivateKey
 
 	// Version string to report in 'version.bind.'
 	VersionString string
