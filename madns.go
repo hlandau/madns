@@ -3,8 +3,8 @@ package madns
 import (
 	"crypto"
 	"expvar"
-	"github.com/hlandau/madns/merr"
 	"github.com/miekg/dns"
+	"gopkg.in/hlandau/madns.v1/merr"
 	"runtime"
 	"sort"
 	"strings"

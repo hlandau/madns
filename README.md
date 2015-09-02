@@ -1,7 +1,7 @@
 madns
 =====
 
-[![GoDoc](https://godoc.org/github.com/hlandau/madns?status.svg)](https://godoc.org/github.com/hlandau/madns)
+[![GoDoc](https://godoc.org/gopkg.in/hlandau/madns.v1?status.svg)](https://godoc.org/gopkg.in/hlandau/madns.v1)
 
 madns (pronounced “madness”) is a DNS library written in Go for serving
 abstract zone files as an authoritative nameserver.
@@ -13,6 +13,8 @@ An abstract zone file is any object implementing this interface:
     Lookup(qname string) ([]dns.RR, error)
   }
 ```
+
+Import as `gopkg.in/hlandau/madns.v1`.
 
 Why
 ---

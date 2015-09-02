@@ -4,7 +4,6 @@ import (
 	"crypto"
 	"encoding/base32"
 	"fmt"
-	"github.com/hlandau/degoutils/log"
 	"github.com/miekg/dns"
 	"time"
 )
@@ -27,7 +26,9 @@ func stepName(hashB32Hex string) string {
 	}
 
 	b, err := base32.HexEncoding.DecodeString(hashB32Hex)
-	log.Panice(err, hashB32Hex)
+	if err != nil {
+		panic(err)
+	}
 
 	for i := len(b) - 1; i >= 0; i-- {
 		b[i]++
@@ -95,8 +96,6 @@ func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 	maxttl := rraMaxTTL(rra)
 	exp := time.Duration(maxttl)*time.Second + time.Duration(10)*time.Minute
 
-	log.Info("maxttl: ", maxttl, "  expiration: ", exp)
-
 	now := time.Now()
 	rrsig := &dns.RRSIG{
 		Hdr:        dns.RR_Header{Ttl: maxttl},
@@ -126,7 +125,6 @@ func (tx *stx) signResponseSection(rra *[]dns.RR) error {
 	if len(*rra) == 0 {
 		return nil
 	}
-	//log.Info("sign section: ", *rra)
 
 	i := 0
 	a := []dns.RR{}
@@ -182,12 +180,10 @@ func (tx *stx) signResponse() error {
 	for _, r := range []*[]dns.RR{&tx.res.Answer, &tx.res.Ns /*&tx.res.Extra*/} {
 		err := tx.signResponseSection(r)
 		if err != nil {
-			log.Infoe(err, "fail signResponse")
 			return err
 		}
 	}
 
-	log.Info("done signResponse")
 	return nil
 }
 
