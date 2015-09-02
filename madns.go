@@ -1,22 +1,22 @@
 package madns
 
-import "github.com/miekg/dns"
-import "github.com/hlandau/madns/merr"
-import "strings"
+import (
+	"crypto"
+	"expvar"
+	"github.com/hlandau/madns/merr"
+	"github.com/miekg/dns"
+	"runtime"
+	"sort"
+	"strings"
+)
 
-//import "github.com/hlandau/degoutils/log"
-//import "fmt"
+const version string = "1.0.0"
 
-import "sort"
-import "runtime"
-import "expvar"
-import "crypto"
-
-const version string = "1.0"
-
-var cNumQueries = expvar.NewInt("madns.numQueries")
-var cNumQueriesNoEDNS = expvar.NewInt("madns.numQueriesNoEDNS")
-var cBackendLookups = expvar.NewInt("madns.numBackendLookups")
+var (
+	cNumQueries       = expvar.NewInt("madns.numQueries")
+	cNumQueriesNoEDNS = expvar.NewInt("madns.numQueriesNoEDNS")
+	cBackendLookups   = expvar.NewInt("madns.numBackendLookups")
+)
 
 // Interface for querying an abstract zone file.
 type Backend interface {

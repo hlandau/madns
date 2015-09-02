@@ -1,15 +1,17 @@
 package madns
 
-import "testing"
-import "crypto"
-import "github.com/miekg/dns"
-import "github.com/hlandau/madns/merr"
-import "github.com/hlandau/degoutils/log"
-import "net"
-import "gopkg.in/yaml.v2"
-import "os"
-import "io/ioutil"
-import "sort"
+import (
+	"crypto"
+	"github.com/hlandau/degoutils/log"
+	"github.com/hlandau/madns/merr"
+	"github.com/miekg/dns"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"net"
+	"os"
+	"sort"
+	"testing"
+)
 
 type test struct {
 	Queries   []*query

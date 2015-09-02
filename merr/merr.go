@@ -1,8 +1,10 @@
 // Error types for processing DNS requests.
 package merr
 
-import "github.com/miekg/dns"
-import "fmt"
+import (
+	"fmt"
+	"github.com/miekg/dns"
+)
 
 // An Error interface which allows an associated rcode to be queried.
 type Error interface {

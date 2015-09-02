@@ -1,11 +1,13 @@
 package madns
 
-import "time"
-import "github.com/miekg/dns"
-import "encoding/base32"
-import "github.com/hlandau/degoutils/log"
-import "fmt"
-import "crypto"
+import (
+	"crypto"
+	"encoding/base32"
+	"fmt"
+	"github.com/hlandau/degoutils/log"
+	"github.com/miekg/dns"
+	"time"
+)
 
 // Determines if a transaction should be considered to have the given query type.
 // Returns true iff the query type was qtype or ANY.
