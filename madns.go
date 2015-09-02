@@ -1,4 +1,4 @@
-package madns
+package madns // import "gopkg.in/hlandau/madns.v1"
 
 import (
 	"crypto"
