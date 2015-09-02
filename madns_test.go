@@ -1,6 +1,7 @@
 package madns
 
 import "testing"
+import "crypto"
 import "github.com/miekg/dns"
 import "github.com/hlandau/madns/merr"
 import "github.com/hlandau/degoutils/log"
@@ -193,9 +194,9 @@ func init() {
 }
 
 var testKSK *dns.DNSKEY
-var testKSKPrivate dns.PrivateKey
+var testKSKPrivate crypto.PrivateKey
 var testZSK *dns.DNSKEY
-var testZSKPrivate dns.PrivateKey
+var testZSKPrivate crypto.PrivateKey
 
 var testKSKs = `test. IN DNSKEY 257 3 8 AwEAAbl6k1vj0oJ8fvRW0ouMxGfUVz0/HGnaRj7oSolrxO+wvpZf+jX8 WKdE7TfKiVTipXfHhMe655Ltb5IKcrygyDCgLDyBOv8HygnZNznh8GCN KVHNp14lOLlQWzW3WYTrvwG5iswQuJq/f0WKrWNe9glIP/nL4l0CNEZs 6qgc2x47+07wogpTip0BLdjGP59+tXZTRlmw4z7ELE1chZxOtVjbMfIC ANjET59SYuN8nxZPy6mPqpjV65OvRpw+IYPnWLrIm0laPnOFePfiUF1v eag/NDhgE5kGFDMqsdNkDv8QX5tAICrnduillqNtm+AzUM9pERFaJeMn 3RpDLR4nzdc=`
 var testKSKPrivates = `Private-key-format: v1.3
