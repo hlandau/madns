@@ -6,9 +6,11 @@ abstract zone files as an authoritative nameserver.
 
 An abstract zone file is any object implementing this interface:
 
+```go
   type Backend interface {
     Lookup(qname string) ([]dns.RR, error)
   }
+```
 
 Why
 ---
@@ -47,5 +49,6 @@ terminology).
 
 Licence
 -------
-© 2014 Hugo Landau <hlandau@devever.net>    Licenced under the GPLv3 or later
+
+    © 2014 Hugo Landau <hlandau@devever.net>    Licenced under the GPLv3 or later
 
