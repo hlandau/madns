@@ -2,7 +2,6 @@ package madns
 
 import (
 	"crypto"
-	"github.com/hlandau/degoutils/log"
 	"github.com/miekg/dns"
 	"gopkg.in/hlandau/madns.v1/merr"
 	"gopkg.in/yaml.v2"
