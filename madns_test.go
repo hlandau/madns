@@ -141,6 +141,10 @@ func testWith(t *testing.T, tst *test) {
 		var res *dns.Msg
 		prw := &psuedorw{
 			writeMsg: func(m *dns.Msg) error {
+				if res != nil {
+					panic("cannot send multiple responses")
+				}
+
 				res = m
 				return nil
 			},

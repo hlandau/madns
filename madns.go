@@ -3,12 +3,15 @@ package madns // import "gopkg.in/hlandau/madns.v1"
 import (
 	"crypto"
 	"expvar"
+	"github.com/hlandau/xlog"
 	"github.com/miekg/dns"
 	"gopkg.in/hlandau/madns.v1/merr"
 	"runtime"
 	"sort"
 	"strings"
 )
+
+var log, Log = xlog.New("madns")
 
 const version string = "1.0.0"
 
@@ -88,6 +91,20 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 		cNumQueriesNoEDNS.Add(1)
 	}
 
+	e.handleTx(rw, &tx)
+}
+
+func (e *engine) handleTx(rw dns.ResponseWriter, tx *stx) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Errorf("Failed to handle DNS request: %+v", err)
+			res := &dns.Msg{}
+			res.SetReply(tx.req)
+			res.SetRcode(tx.req, dns.RcodeServerFailure)
+			rw.WriteMsg(res)
+		}
+	}()
+
 	for _, q := range tx.req.Question {
 		tx.qname = strings.ToLower(q.Name)
 		tx.qtype = q.Qtype
@@ -102,19 +119,13 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 			} else if err == merr.ErrNotInZone {
 				tx.rcode = dns.RcodeRefused
 			} else if tx.rcode == 0 {
-				//log.Info("Issuing SERVFAIL because of error: ", err)
 				tx.rcode = dns.RcodeServerFailure
 			}
 		}
 	}
 
 	tx.res.SetRcode(tx.req, tx.rcode)
-
-	err := rw.WriteMsg(tx.res)
-	if err != nil {
-		//log.Infoe(err)
-		//log.Info(fmt.Sprintf("%+v", tx.res))
-	}
+	rw.WriteMsg(tx.res) // ignore errors
 }
 
 type stx struct {
