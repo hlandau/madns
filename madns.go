@@ -3,10 +3,10 @@ package madns // import "gopkg.in/hlandau/madns.v1"
 import (
 	"crypto"
 	"expvar"
+	"github.com/hlandau/buildinfo"
 	"github.com/hlandau/xlog"
 	"github.com/miekg/dns"
 	"gopkg.in/hlandau/madns.v1/merr"
-	"runtime"
 	"sort"
 	"strings"
 )
@@ -63,12 +63,20 @@ func NewEngine(cfg *EngineConfig) (e Engine, err error) {
 	ee := &engine{}
 	ee.cfg = *cfg
 
+	ee.versionString = cfg.VersionString
+	if ee.versionString != "" {
+		ee.versionString += " "
+	}
+	ee.versionString += buildinfo.VersionSummary("gopkg.in/hlandau/madns.v1", "madns")
+	ee.versionString += " " + buildinfo.GoVersionSummary()
+
 	e = ee
 	return
 }
 
 type engine struct {
-	cfg EngineConfig
+	cfg           EngineConfig
+	versionString string
 }
 
 func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
@@ -230,10 +238,6 @@ func (tx *stx) addAnswersStrange() error {
 	// CHAOS responses are not signed, NSEC'd or otherwise DNSSEC'd in any way.
 	switch tx.qname {
 	case "version.bind.", "version.server.":
-		vs := tx.e.cfg.VersionString
-		if len(vs) > 0 {
-			vs += " "
-		}
 		tx.res.Answer = append(tx.res.Answer, &dns.TXT{
 			Hdr: dns.RR_Header{
 				Name:   "version.bind.",
@@ -241,7 +245,7 @@ func (tx *stx) addAnswersStrange() error {
 				Class:  dns.ClassCHAOS,
 				Ttl:    0,
 			},
-			Txt: []string{vs + "madns/" + version + " " + runtime.Version() + "/" + runtime.GOARCH + "/" + runtime.GOOS + "/" + runtime.Compiler},
+			Txt: []string{tx.e.versionString},
 		})
 	// TODO: hostname.bind.
 	// TODO: id.server.
