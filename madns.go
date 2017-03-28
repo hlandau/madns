@@ -193,10 +193,12 @@ func (tx *stx) addAnswers() error {
 		// Add DNSKEYs.
 		if tx.e.cfg.ZSK != nil {
 			if tx.istype(dns.TypeDNSKEY) {
-				tx.e.cfg.KSK.Hdr.Name = tx.soa.Hdr.Name
-				tx.e.cfg.ZSK.Hdr.Name = tx.e.cfg.KSK.Hdr.Name
+				if tx.e.cfg.KSK != nil {
+					tx.e.cfg.KSK.Hdr.Name = tx.soa.Hdr.Name
+					tx.res.Answer = append(tx.res.Answer, tx.e.cfg.KSK)
+				}
 
-				tx.res.Answer = append(tx.res.Answer, tx.e.cfg.KSK)
+				tx.e.cfg.ZSK.Hdr.Name = tx.soa.Hdr.Name
 				tx.res.Answer = append(tx.res.Answer, tx.e.cfg.ZSK)
 
 				// cancel sending a consolation SOA since we're giving DNSKEY answers
