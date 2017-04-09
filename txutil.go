@@ -96,7 +96,7 @@ func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 	maxttl := rraMaxTTL(rra)
 	exp := time.Duration(maxttl)*time.Second + time.Duration(10)*time.Minute
 
-	now := time.Now()
+	now := time.Now().UTC()
 	rrsig := &dns.RRSIG{
 		Hdr:        dns.RR_Header{Ttl: maxttl},
 		Algorithm:  dns.RSASHA256,
