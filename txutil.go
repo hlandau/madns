@@ -99,7 +99,6 @@ func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 	now := time.Now().UTC()
 	rrsig := &dns.RRSIG{
 		Hdr:        dns.RR_Header{Ttl: maxttl},
-		Algorithm:  dns.RSASHA256,
 		Expiration: uint32(now.Add(exp).Unix()),
 		Inception:  uint32(now.Add(time.Duration(-10) * time.Minute).Unix()),
 		SignerName: dns.Fqdn(tx.soa.Hdr.Name),
@@ -108,8 +107,10 @@ func (tx *stx) signRRs(rra []dns.RR, useKSK bool) (dns.RR, error) {
 	if useKSK {
 		pk = tx.e.cfg.KSKPrivate
 		rrsig.KeyTag = tx.e.cfg.KSK.KeyTag()
+		rrsig.Algorithm = tx.e.cfg.KSK.Algorithm
 	} else {
 		rrsig.KeyTag = tx.e.cfg.ZSK.KeyTag()
+		rrsig.Algorithm = tx.e.cfg.ZSK.Algorithm
 	}
 
 	err := rrsig.Sign(pk.(crypto.Signer), rra)
