@@ -54,7 +54,7 @@ func shouldSignType(t uint16, isAuthoritySection bool) bool {
 
 // Returns true iff a client requested DNSSEC.
 func (tx *stx) useDNSSEC() bool {
-	if tx.e.cfg.KSK == nil {
+	if tx.e.cfg.ZSK == nil {
 		return false
 	}
 
