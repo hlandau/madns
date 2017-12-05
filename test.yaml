@@ -18,6 +18,23 @@
       rrs:
         - ns2.example.bit. IN A 127.0.0.42
         - ns2.example.bit. IN AAAA ::42
+    cn1.example2.bit.:
+      rrs:
+        - cn1.example2.bit. IN CNAME cn2.example2.bit.
+        - cn1.example2.bit. IN A 127.66.66.66
+    cn2.example2.bit.:
+      rrs:
+        - cn2.example2.bit. IN A 127.0.0.43
+    mx.example2.bit.:
+      rrs:
+        - mx.example2.bit. IN MX 10 mx1.example2.bit.
+        - mx.example2.bit. IN MX 20 mx2.example2.bit.
+    mx1.example2.bit.:
+      rrs:
+        - mx1.example2.bit. IN A 127.0.0.44
+    mx2.example2.bit.:
+      rrs:
+        - mx2.example2.bit. IN A 127.0.0.45
   queries:
     - qname: bit.
       qtype: SOA
@@ -94,4 +111,18 @@
         - ns1.example.bit. IN A 127.0.0.41
         - ns2.example.bit. IN AAAA ::42
         - ns2.example.bit. IN A 127.0.0.42
-
+    - qname: cn1.example2.bit.
+      qtype: A
+      dnssec: false
+      result: NOERROR
+      aa: true
+      an:
+        - cn1.example2.bit. IN CNAME cn2.example2.bit.
+    - qname: mx.example2.bit.
+      qtype: MX
+      dnssec: false
+      result: NOERROR
+      aa: true
+      an:
+        - mx.example2.bit. IN MX 10 mx1.example2.bit.
+        - mx.example2.bit. IN MX 20 mx2.example2.bit.
