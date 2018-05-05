@@ -264,6 +264,7 @@ func (tx *stx) addAnswersMain() error {
 	var origerr error
 	var firsterr error
 	var nss []dns.RR
+	var dname *dns.DNAME
 	firstNSAtLen := -1
 	firstSOAAtLen := -1
 
@@ -282,6 +283,10 @@ A:
 			for i := range rrs {
 				t := rrs[i].Header().Rrtype
 				switch t {
+				case dns.TypeDNAME:
+					if len(n) != len(norig) {
+						dname = rrs[i].(*dns.DNAME)
+					}
 				case dns.TypeSOA:
 					// found the apex of the closest zone for which we are authoritative
 					// We haven't found any nameservers at this point, so we can serve without worrying about delegations.
@@ -336,6 +341,13 @@ A:
 
 	if firstSOAAtLen >= firstNSAtLen {
 		// We got a SOA and zero or more NSes at the same level; we're not a delegation.
+
+		// Add DNAME if present
+		if dname != nil {
+			origq = append(origq, dname)
+			origerr = nil
+		}
+
 		return tx.addAnswersAuthoritative(origq, origerr)
 	}
 
@@ -371,9 +383,38 @@ func (tx *stx) addAnswersAuthoritative(rrs []dns.RR, origerr error) error {
 		return origerr
 	}
 
+	dn := rrsetHasType(rrs, dns.TypeDNAME)
+	if dn != nil && dn.(*dns.DNAME).Hdr.Name != tx.qname {
+		// A DNAME record exists at a higher level domain.
+
+		// Suppress all non-DNAME records, and synthesize a CNAME.
+
+		tx.res.Answer = append(tx.res.Answer, dn)
+
+		// Example:
+		// qname == "www.radio.bit.",
+		// DNAME name == "radio.bit.",
+		// DNAME target == "biteater.dtdns.net.",
+		// result target == "www." + "biteater.dtdns.net." == "www.biteater.dtdns.net."
+		target := strings.TrimSuffix(tx.qname, dn.(*dns.DNAME).Hdr.Name) + dn.(*dns.DNAME).Target
+
+		cnSynthetic := &dns.CNAME{
+			Hdr: dns.RR_Header{
+				Name:   tx.qname,
+				Rrtype: dns.TypeCNAME,
+				Class:  dn.(*dns.DNAME).Hdr.Class,
+				Ttl:    dn.(*dns.DNAME).Hdr.Ttl,
+			},
+			Target: target,
+		}
+		return tx.addAnswersCNAME(cnSynthetic)
+	}
+
+	// At this point, if dn != nil, the DNAME is owned by tx.qname
+
 	cn := rrsetHasType(rrs, dns.TypeCNAME)
-	if cn != nil && !tx.istype(dns.TypeCNAME) {
-		// We have an alias.
+	if cn != nil && !tx.istype(dns.TypeCNAME) && dn == nil {
+		// We have an alias, and it's not suppressed by a DNAME.
 		// TODO: check that the CNAME record is actually in the zone and not some bizarro CNAME glue record
 		return tx.addAnswersCNAME(cn.(*dns.CNAME))
 	}
@@ -381,6 +422,12 @@ func (tx *stx) addAnswersAuthoritative(rrs []dns.RR, origerr error) error {
 	// Add every record which was requested.
 	for i := range rrs {
 		t := rrs[i].Header().Rrtype
+
+		// Suppress CNAME records when there's also a DNAME record
+		if t == dns.TypeCNAME && dn != nil {
+			continue
+		}
+
 		if tx.istype(t) {
 			tx.res.Answer = append(tx.res.Answer, rrs[i])
 		}
