@@ -15,6 +15,8 @@ var log, Log = xlog.New("madns")
 
 const version string = "1.0.0"
 
+const EDNS0STREAMISOLATION uint16 = 65312
+
 var (
 	cNumQueries       = expvar.NewInt("madns.numQueries")
 	cNumQueriesNoEDNS = expvar.NewInt("madns.numQueriesNoEDNS")
@@ -33,7 +35,7 @@ type Backend interface {
 	// The existence of wildcard records will be determined by doing a lookup for a name
 	// like "*.example.com", so there is no need to process the wildcard logic other than
 	// to make sure such a lookup functions correctly.
-	Lookup(qname string) (rrs []dns.RR, err error)
+	Lookup(qname, streamIsolationID string) (rrs []dns.RR, err error)
 }
 
 // DNS query engine implementing dns.Handler. Suitable for exposure directly to
@@ -92,8 +94,15 @@ func (e *engine) ServeDNS(rw dns.ResponseWriter, reqMsg *dns.Msg) {
 	tx.typesAtQname = map[uint16]struct{}{}
 	tx.additionalQueue = map[string]struct{}{}
 
+	tx.streamIsolationID = []byte{}
+
 	opt := tx.req.IsEdns0()
 	if opt != nil {
+		for _, edns0 := range opt.Option {
+			if edns0.Option() == EDNS0STREAMISOLATION {
+				tx.streamIsolationID = edns0.(*dns.EDNS0_LOCAL).Data
+			}
+		}
 		tx.res.Extra = append(tx.res.Extra, opt)
 	} else {
 		cNumQueriesNoEDNS.Add(1)
@@ -145,6 +154,8 @@ type stx struct {
 	e      *engine
 	rcode  int
 
+	streamIsolationID []byte
+
 	typesAtQname    map[uint16]struct{}
 	additionalQueue map[string]struct{}
 	soa             *dns.SOA
@@ -170,7 +181,7 @@ type stx struct {
 func (tx *stx) blookup(qname string) (rrs []dns.RR, err error) {
 	cBackendLookups.Add(1)
 
-	rrs, err = tx.e.cfg.Backend.Lookup(qname)
+	rrs, err = tx.e.cfg.Backend.Lookup(qname, string(tx.streamIsolationID))
 	if err == nil && len(rrs) == 0 {
 		err = merr.ErrNoResults
 	}
