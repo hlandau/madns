@@ -1,7 +1,7 @@
 madns
 =====
 
-[![GoDoc](https://godoc.org/gopkg.in/hlandau/madns.v1?status.svg)](https://godoc.org/gopkg.in/hlandau/madns.v1)
+[![GoDoc](https://godoc.org/gopkg.in/hlandau/madns.v2?status.svg)](https://godoc.org/gopkg.in/hlandau/madns.v2)
 
 madns (pronounced “madness”) is a DNS library written in Go for serving
 abstract zone files as an authoritative nameserver.
@@ -10,11 +10,11 @@ An abstract zone file is any object implementing this interface:
 
 ```go
   type Backend interface {
-    Lookup(qname string) ([]dns.RR, error)
+    Lookup(qname, streamIsolationID string) ([]dns.RR, error)
   }
 ```
 
-Import as `gopkg.in/hlandau/madns.v1`.
+Import as `gopkg.in/hlandau/madns.v2`.
 
 Why
 ---
@@ -50,6 +50,33 @@ the low level interface it provides.
 
 madns supports DNSSEC and uses “NSEC3 white lies” (NSEC3NARROW in PowerDNS
 terminology).
+
+Stream Isolation
+----------------
+Abstract zone files accept a `streamIsolationID` argument.  Your abstract zone
+file must process the stream isolation ID according to the following rules:
+
+1. If your abstract zone file's `Lookup` implementation generates no public
+   network traffic, then you can ignore the stream isolation ID.
+1. If your abstract zone file's implementation generates public network traffic
+   over the Tor network (or a similar anonymity network), then your abstract
+   zone file must make sure that two `Lookup` calls that have unequal stream
+   isolation ID's do not produce public network traffic over the same Tor
+   circuit (or equivalent for other anonymity networks).  Typically you would
+   do this via the SOCKS5 username field.
+1. If your abstract zone file's implementation saves any state between
+   different `Lookup` calls (e.g. caching), then your abstract zone file must
+   make sure that two `Lookup` calls that have unequal stream isolation ID's do
+   not share any such state.
+1. If your abstract zone file is unable to provide the above guarantees or
+   produces public network traffic that is not routed over Tor (or a similar
+   anonymity network), then your abstract zone file must return an error
+   (without producing network traffic) if the stream isolation ID is unequal to
+   the empty string.
+
+DNS clients who wish to specify a stream isolation ID can do so via the EDNS0
+option code `65312`, which is within the "Local/Experimental Use" range as per
+RFC 6891.
 
 Licence
 -------
