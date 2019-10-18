@@ -3,7 +3,7 @@ package madns
 import (
 	"crypto"
 	"github.com/miekg/dns"
-	"gopkg.in/hlandau/madns.v1/merr"
+	"gopkg.in/hlandau/madns.v2/merr"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net"

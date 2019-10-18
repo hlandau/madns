@@ -1,4 +1,4 @@
-package madns // import "gopkg.in/hlandau/madns.v1"
+package madns // import "gopkg.in/hlandau/madns.v2"
 
 import (
 	"crypto"
@@ -6,7 +6,7 @@ import (
 	"github.com/hlandau/buildinfo"
 	"github.com/hlandau/xlog"
 	"github.com/miekg/dns"
-	"gopkg.in/hlandau/madns.v1/merr"
+	"gopkg.in/hlandau/madns.v2/merr"
 	"sort"
 	"strings"
 )
@@ -69,7 +69,7 @@ func NewEngine(cfg *EngineConfig) (e Engine, err error) {
 	if ee.versionString != "" {
 		ee.versionString += " "
 	}
-	ee.versionString += buildinfo.VersionSummary("gopkg.in/hlandau/madns.v1", "madns")
+	ee.versionString += buildinfo.VersionSummary("gopkg.in/hlandau/madns.v2", "madns")
 	ee.versionString += " " + buildinfo.GoVersionSummary()
 
 	e = ee
