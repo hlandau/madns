@@ -1,7 +1,7 @@
 madns
 =====
 
-[![GoDoc](https://godoc.org/gopkg.in/hlandau/madns.v2?status.svg)](https://godoc.org/gopkg.in/hlandau/madns.v2)
+[![godocs.io](https://godocs.io/gopkg.in/hlandau/madns.v2?status.svg)](https://godocs.io/gopkg.in/hlandau/madns.v2) [![Build status](https://github.com/hlandau/madns/actions/workflows/go.yml/badge.svg)](#) [![No modules](https://www.devever.net/~hl/f/no-modules2.svg) 100% modules-free.](https://www.devever.net/~hl/gomod)
 
 madns (pronounced “madness”) is a DNS library written in Go for serving
 abstract zone files as an authoritative nameserver.

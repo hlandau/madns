@@ -89,7 +89,7 @@ type response struct {
 	Err string
 }
 
-func (b *test) Lookup(qname string) (rrs []dns.RR, err error) {
+func (b *test) Lookup(qname, isoID string) (rrs []dns.RR, err error) {
 	qname = dns.Fqdn(qname)
 	if r, ok := b.Responses[qname]; ok {
 		for _, rrstr := range r.RRs {
